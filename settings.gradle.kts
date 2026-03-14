@@ -27,7 +27,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AndroidClaw"
+rootProject.name = "AndClaw"
 include(":app")
 include(":model")
 include(":mdm")
