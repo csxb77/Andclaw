@@ -1,3 +1,5 @@
+.vscode/
+app/release/
 # Gradle files
 .gradle/
 build/

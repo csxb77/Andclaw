@@ -19,7 +19,7 @@ android {
         minSdk 31
         targetSdk 36
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
 
         multiDexEnabled true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -46,6 +46,15 @@ android {
         viewBinding true
         dataBinding true
         buildConfig true
+    }
+
+    applicationVariants.configureEach { variant ->
+        variant.outputs.configureEach { output ->
+            def vName = variant.versionName
+            def vCode = variant.versionCode
+            def buildType = variant.buildType.name
+            outputFileName = "${vName}-${vCode}-${buildType}.apk"
+        }
     }
 }
 
