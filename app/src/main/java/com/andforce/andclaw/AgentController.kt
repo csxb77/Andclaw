@@ -80,12 +80,19 @@ object AgentController : ITgBridgeService, IAiConfigService {
         getPrefs().edit().putLong("tg_allowed_chat_id", chatId).apply()
     }
 
+    override val tgToken: String
+        get() = getPrefs().getString("tg_token", null) ?: BuildConfig.TG_TOKEN
+
+    override fun setTgToken(token: String) {
+        getPrefs().edit().putString("tg_token", token).apply()
+    }
+
     fun getPrefs() = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     // --- ITgBridgeService ---
 
     override fun startBridge() {
-        val token = BuildConfig.TG_TOKEN
+        val token = tgToken
         if (token.isBlank()) return
 
         tgBotClient = TgBotClient(token)

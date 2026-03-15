@@ -307,24 +307,26 @@ open class SetupKioskModeActivity : AppCompatActivity() {
         dialogBinding.etApiKey.setText(aiConfigService.apiKey)
         dialogBinding.etModel.setText(aiConfigService.model)
 
+        dialogBinding.etTgToken.setText(aiConfigService.tgToken)
+
         val savedChatId = aiConfigService.getTgChatId()
         dialogBinding.etTgChatId.setText(if (savedChatId == 0L) "" else savedChatId.toString())
 
         MaterialAlertDialogBuilder(this)
-            .setTitle("AI API Configuration")
+            .setTitle("AI 配置")
             .setView(dialogBinding.root)
-            .setPositiveButton("Save") { _, _ ->
+            .setPositiveButton("保存") { _, _ ->
                 aiConfigService.updateConfig(
                     provider = dialogBinding.spinnerProvider.text.toString(),
                     apiUrl = dialogBinding.etBaseUrl.text.toString(),
                     apiKey = dialogBinding.etApiKey.text.toString(),
                     model = dialogBinding.etModel.text.toString()
                 )
-                val chatIdStr = dialogBinding.etTgChatId.text.toString().trim()
-                val chatId = chatIdStr.toLongOrNull() ?: 0L
+                aiConfigService.setTgToken(dialogBinding.etTgToken.text.toString().trim())
+                val chatId = dialogBinding.etTgChatId.text.toString().trim().toLongOrNull() ?: 0L
                 aiConfigService.setTgChatId(chatId)
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton("取消", null)
             .show()
     }
 
