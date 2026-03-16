@@ -167,7 +167,7 @@ AI 返回 JSON 操作决策
 
 | 提供商 | API 格式 | 配置示例 |
 |--------|---------|---------|
-| **Kimi** | Anthropic Messages | Base URL: `https://api.kimi.com/coding`，Model: `kimi-k2.5` |
+| **Kimi** | Anthropic Messages | Base URL: `https://www.kimi.com/code/console`，Model: `kimi-k2.5` |
 | **OpenAI 兼容** | OpenAI Chat Completions | Base URL: `https://api.openai.com/v1`，Model: `gpt-4o` |
 
 支持多模态输入（文本 + 截图 base64），Kimi 和 OpenAI 格式均可携带图片。
