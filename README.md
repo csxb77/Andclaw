@@ -94,7 +94,7 @@
    2. 发送 `/newbot` 创建新机器人
    3. 按提示设置机器人名称和用户名（用户名必须以 `bot` 结尾）
    4. 创建成功后，复制提供的 **Bot Token**（格式如：`123456789:ABCdefGHIjklMNOpqrsTUVwxyz`）
-   5. 将 Bot Token 填入 `local.properties` 的 `tg_token` 字段，重新编译安装
+   5. 在 Andclaw 设置页面中填入 Bot Token
 
 ---
 
