@@ -63,24 +63,16 @@
    cd Andclaw
    ```
 
-2. **配置 API 密钥**
-
-   创建 `local.properties` 文件：
-   ```properties
-   kimi_key=your_kimi_api_key_here
-   tg_token=your_telegram_bot_token  # 可选，用于 Telegram 远程控制
-   ```
-
-3. **编译安装**
+2. **编译安装**
    ```bash
    ./gradlew :app:installDebug
    ```
 
-4. **授予权限**
+3. **授予权限**
    - 打开应用后，按提示启用**无障碍服务**
    - 授予**显示在其他应用上层**权限
 
-5. **激活 Device Owner**
+4. **激活 Device Owner**
 
    通过 ADB 激活（仅首次设置需要），激活后 Andclaw 获得企业级设备管理能力：
 
