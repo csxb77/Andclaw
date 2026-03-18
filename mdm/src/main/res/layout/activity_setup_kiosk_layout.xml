@@ -130,8 +130,16 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="对话页面"
+                                android:text="对话记录"
                                 android:textAppearance="?attr/textAppearanceHeadline6" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="仅展示历史记录，不支持输入。请用另一部手机通过 Telegram 发送指令，在此查看 AI 的回复与操作。"
+                                android:textAppearance="?attr/textAppearanceBody2"
+                                android:textColor="?android:attr/textColorSecondary" />
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/open_chat_activity"
@@ -139,7 +147,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="8dp"
-                                android:text="启动对话页" />
+                                android:text="对话记录" />
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/open_test_activity"

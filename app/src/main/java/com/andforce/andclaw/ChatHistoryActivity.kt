@@ -1,6 +1,7 @@
 package com.andforce.andclaw
 
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -34,6 +35,8 @@ class ChatHistoryActivity : AppCompatActivity() {
         lifecycleScope.launch {
             AgentController.messages.collect { messageList ->
                 chatAdapter.submitList(messageList)
+                binding.emptyState.visibility =
+                    if (messageList.isEmpty()) View.VISIBLE else View.GONE
                 if (messageList.isNotEmpty()) {
                     binding.chatRecyclerView.smoothScrollToPosition(messageList.size - 1)
                 }
