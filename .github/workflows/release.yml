@@ -31,7 +31,7 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew :app:assembleRelease \
-            -PRELEASE_STORE_FILE=../release.jks \
+            -PRELEASE_STORE_FILE=release.jks \
             -PRELEASE_STORE_PASSWORD="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -PRELEASE_KEY_ALIAS="${{ secrets.ANDROID_KEY_ALIAS }}" \
             -PRELEASE_KEY_PASSWORD="${{ secrets.ANDROID_KEY_PASSWORD }}"
