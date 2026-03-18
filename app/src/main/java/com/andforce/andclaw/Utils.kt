@@ -252,8 +252,9 @@ CRITICAL: Your entire response must be parseable as JSON. Any non-JSON text will
                         put("content", prompt)
                     })
                 })
-                // 降低随机性，让 AI 严格遵守 JSON
-                put("temperature", 0.1)
+                if (!config.model.contains("k2.5")) {
+                    put("temperature", 0.1)
+                }
             }
 
             val request = Request.Builder()
@@ -423,7 +424,9 @@ Respond with JSON only."""
                         put("content", userContent)
                     })
                 })
-                put("temperature", 0.0)
+                if (!config.model.contains("k2.5")) {
+                    put("temperature", 0.0)
+                }
                 if (screenshotBase64 == null) {
                     put("response_format", JSONObject().put("type", "json_object"))
                 }

@@ -20,6 +20,18 @@ class AiSettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAiSettingsBinding
     private val aiConfigService: IAiConfigService by inject()
+    private val keyPrefs by lazy { getSharedPreferences("ai_provider_keys", MODE_PRIVATE) }
+    private var currentProvider = ""
+
+    private fun saveApiKeyForProvider(provider: String, apiKey: String) {
+        if (provider.isNotBlank() && apiKey.isNotBlank()) {
+            keyPrefs.edit().putString("api_key_$provider", apiKey).apply()
+        }
+    }
+
+    private fun loadApiKeyForProvider(provider: String): String {
+        return keyPrefs.getString("api_key_$provider", "") ?: ""
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,6 +43,7 @@ class AiSettingsActivity : AppCompatActivity() {
         setupProviderSpinner()
         loadCurrentConfig()
 
+        binding.btnFetchModels.setOnClickListener { fetchModels() }
         binding.btnTestApi.setOnClickListener { testApiConnection() }
         binding.btnTestTg.setOnClickListener { testTelegram() }
         binding.btnSave.setOnClickListener { saveAndFinish() }
@@ -42,19 +55,25 @@ class AiSettingsActivity : AppCompatActivity() {
         binding.spinnerProvider.apply {
             setAdapter(adapter)
             setOnItemClickListener { _, _, position, _ ->
-                when (providers[position]) {
+                saveApiKeyForProvider(currentProvider, binding.etApiKey.text.toString().trim())
+                val selected = providers[position]
+                currentProvider = selected
+                val savedKey = loadApiKeyForProvider(selected)
+                when (selected) {
                     "Kimi Code" -> {
                         binding.etBaseUrl.setText("https://api.kimi.com/coding")
-                        binding.etModel.setText("kimi-k2.5")
-                        binding.etApiKey.setText(aiConfigService.defaultApiKey)
+                        binding.etModel.setText("kimi-k2.5", false)
+                        binding.etApiKey.setText(savedKey.ifEmpty { aiConfigService.defaultApiKey })
                     }
                     "Moonshot" -> {
                         binding.etBaseUrl.setText("https://api.moonshot.cn/v1")
-                        binding.etModel.setText("kimi-k2-turbo-preview")
+                        binding.etModel.setText("kimi-k2-turbo-preview", false)
+                        binding.etApiKey.setText(savedKey)
                     }
                     "OpenAI" -> {
                         binding.etBaseUrl.setText("https://api.openai.com/v1/chat/completions")
-                        binding.etModel.setText("gpt-4o")
+                        binding.etModel.setText("gpt-4o", false)
+                        binding.etApiKey.setText(savedKey)
                     }
                 }
             }
@@ -62,20 +81,25 @@ class AiSettingsActivity : AppCompatActivity() {
     }
 
     private fun loadCurrentConfig() {
-        binding.spinnerProvider.setText(aiConfigService.provider, false)
+        currentProvider = aiConfigService.provider
+        binding.spinnerProvider.setText(currentProvider, false)
         binding.etBaseUrl.setText(aiConfigService.apiUrl)
-        binding.etApiKey.setText(aiConfigService.apiKey)
-        binding.etModel.setText(aiConfigService.model)
+        val savedKey = loadApiKeyForProvider(currentProvider)
+        binding.etApiKey.setText(savedKey.ifEmpty { aiConfigService.apiKey })
+        binding.etModel.setText(aiConfigService.model, false)
         binding.etTgToken.setText(aiConfigService.tgToken)
         val savedChatId = aiConfigService.getTgChatId()
         binding.etTgChatId.setText(if (savedChatId == 0L) "" else savedChatId.toString())
     }
 
     private fun saveAndFinish() {
+        val provider = binding.spinnerProvider.text.toString()
+        val apiKey = binding.etApiKey.text.toString().trim()
+        saveApiKeyForProvider(provider, apiKey)
         aiConfigService.updateConfig(
-            provider = binding.spinnerProvider.text.toString(),
+            provider = provider,
             apiUrl = binding.etBaseUrl.text.toString(),
-            apiKey = binding.etApiKey.text.toString(),
+            apiKey = apiKey,
             model = binding.etModel.text.toString()
         )
         aiConfigService.setTgToken(binding.etTgToken.text.toString().trim())
@@ -83,6 +107,92 @@ class AiSettingsActivity : AppCompatActivity() {
         aiConfigService.setTgChatId(chatId)
         finish()
     }
+
+    // region 获取模型列表
+
+    private fun fetchModels() {
+        val provider = binding.spinnerProvider.text.toString()
+        val baseUrl = binding.etBaseUrl.text.toString().trim()
+        val apiKey = binding.etApiKey.text.toString().trim()
+
+        if (baseUrl.isEmpty() || apiKey.isEmpty()) {
+            showModelListResult("请先填写 Base URL 和 API Key", isError = true)
+            return
+        }
+
+        binding.btnFetchModels.isEnabled = false
+        showModelListResult("正在获取模型列表...", isError = false)
+
+        lifecycleScope.launch {
+            val result = queryModels(provider, baseUrl, apiKey)
+            binding.btnFetchModels.isEnabled = true
+            if (result.second != null) {
+                showModelListResult(result.second!!, isError = true)
+            } else {
+                val models = result.first
+                val adapter = ArrayAdapter(
+                    this@AiSettingsActivity,
+                    android.R.layout.simple_dropdown_item_1line,
+                    models
+                )
+                binding.etModel.setAdapter(adapter)
+                binding.etModel.showDropDown()
+                showModelListResult("获取到 ${models.size} 个可用模型", isError = false)
+            }
+        }
+    }
+
+    private suspend fun queryModels(
+        provider: String,
+        baseUrl: String,
+        apiKey: String
+    ): Pair<List<String>, String?> = withContext(Dispatchers.IO) {
+        try {
+            val isKimiCode = provider.equals("Kimi Code", ignoreCase = true)
+            val url = if (isKimiCode) {
+                "${baseUrl.removeSuffix("/")}/v1/models"
+            } else {
+                "${baseUrl.removeSuffix("/").removeSuffix("/chat/completions")}/models"
+            }
+            val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                if (isKimiCode) {
+                    setRequestProperty("x-api-key", apiKey)
+                    setRequestProperty("anthropic-version", "2023-06-01")
+                } else {
+                    setRequestProperty("Authorization", "Bearer $apiKey")
+                }
+                connectTimeout = 15000
+                readTimeout = 15000
+            }
+            val code = conn.responseCode
+            val respBody = (if (code in 200..299) conn.inputStream else conn.errorStream)
+                ?.bufferedReader()?.readText() ?: ""
+            conn.disconnect()
+
+            if (code in 200..299) {
+                val dataArr = JSONObject(respBody).getJSONArray("data")
+                val models = (0 until dataArr.length())
+                    .map { dataArr.getJSONObject(it).getString("id") }
+                    .sorted()
+                models to null
+            } else {
+                emptyList<String>() to "获取失败 (HTTP $code)\n$respBody"
+            }
+        } catch (e: Exception) {
+            emptyList<String>() to "获取失败: ${e.message}"
+        }
+    }
+
+    private fun showModelListResult(text: String, isError: Boolean) {
+        binding.tvModelListResult.apply {
+            visibility = View.VISIBLE
+            this.text = text
+            setTextColor(getColor(if (isError) android.R.color.holo_red_dark else android.R.color.holo_green_dark))
+        }
+    }
+
+    // endregion
 
     // region API 测试
 
@@ -122,7 +232,9 @@ class AiSettingsActivity : AppCompatActivity() {
             val body = JSONObject().apply {
                 put("model", model)
                 put("max_tokens", 64)
-                put("temperature", 0.0)
+                if (!model.contains("k2.5")) {
+                    put("temperature", 0.0)
+                }
                 put("messages", JSONArray().apply {
                     put(JSONObject().apply {
                         put("role", "user")
@@ -175,7 +287,9 @@ class AiSettingsActivity : AppCompatActivity() {
             val body = JSONObject().apply {
                 put("model", model)
                 put("max_tokens", 64)
-                put("temperature", 0.0)
+                if (!model.contains("k2.5")) {
+                    put("temperature", 0.0)
+                }
                 put("messages", JSONArray().apply {
                     put(JSONObject().apply {
                         put("role", "user")
