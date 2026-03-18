@@ -105,6 +105,7 @@ data class AiAction(
         const val TYPE_CAMERA = "camera"
         const val TYPE_SCREEN_RECORD = "screen_record"
         const val TYPE_VOLUME = "volume"
+        const val TYPE_WAKE_SCREEN = "wake_screen"
         const val TYPE_FINISH = "finish"
         const val TYPE_ERROR = "error"
     }

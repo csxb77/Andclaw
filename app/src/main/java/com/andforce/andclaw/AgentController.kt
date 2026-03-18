@@ -366,7 +366,8 @@ object AgentController : ITgBridgeService, IAiConfigService {
             AiAction.TYPE_DOWNLOAD,
             AiAction.TYPE_CAMERA,
             AiAction.TYPE_SCREEN_RECORD,
-            AiAction.TYPE_VOLUME -> {
+            AiAction.TYPE_VOLUME,
+            AiAction.TYPE_WAKE_SCREEN -> {
                 performConfirmedAction(action)
             }
 
@@ -740,6 +741,19 @@ object AgentController : ITgBridgeService, IAiConfigService {
                                 else -> outputMsg = "Unknown volume_action: $volumeAction"
                             }
                         }
+                    }
+
+                    AiAction.TYPE_WAKE_SCREEN -> {
+                        val pm = appContext.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+                        @Suppress("DEPRECATION")
+                        val wakeLock = pm.newWakeLock(
+                            android.os.PowerManager.SCREEN_BRIGHT_WAKE_LOCK or android.os.PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                            "andclaw:wakeup"
+                        )
+                        wakeLock.acquire(3000L)
+                        wakeLock.release()
+                        success = true
+                        outputMsg = "屏幕已唤醒"
                     }
                 }
             } catch (e: Exception) {

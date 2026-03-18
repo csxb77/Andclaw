@@ -139,6 +139,9 @@ open class SetupKioskModeActivity : AppCompatActivity() {
                         )
                     usbEnableDebugAlertDialog?.dismiss()
 
+                    mDevicePolicyManagerGateway?.setPasswordQuality(0, {}, {})
+                    mDevicePolicyManagerGateway?.setKeyguardDisabled(true, {}, {})
+
                     tgBridgeService.startBridge()
                 } else {
                     tgBridgeService.stopBridge()

@@ -197,6 +197,9 @@ Optional extras.stream: "music" (default), "ring", "notification", "alarm", "sys
 IMPORTANT: When user asks to change volume, mute, unmute, or query volume level, ALWAYS use type "volume". Do NOT try to open system Settings or use click actions on volume UI.
 Example: {"type":"volume","volume_action":"set","extras":{"level":50,"stream":"music"},"progress":"调整音量","reason":"用户要求将媒体音量设为50%"}
 Example: {"type":"volume","volume_action":"mute","extras":{"stream":"ring"},"progress":"静音铃声","reason":"用户要求将铃声静音"}
+
+- type: "wake_screen" — Wake up and turn on the screen when it is off. The lock screen (keyguard) is already disabled on this device, so there is NO need to swipe or enter a password after waking. Use this when user asks to light up / wake / turn on / unlock (解锁/点亮/唤醒) the screen.
+Example: {"type":"wake_screen","progress":"唤醒屏幕","reason":"用户要求点亮屏幕"}
 $dpmSection
 === RULES ===
 1. Use "intent" first if a direct shortcut exists.
@@ -225,7 +228,7 @@ Full schema:
 {
   "progress": "Steps completed so far",
   "reason": "Why this step is needed",
-  "type": "intent | click | swipe | long_press | text_input | global_action | screenshot | download | wait | camera | screen_record | volume | ${if (isDeviceOwner) "dpm | " else ""}finish",
+  "type": "intent | click | swipe | long_press | text_input | global_action | screenshot | download | wait | camera | screen_record | volume | wake_screen | ${if (isDeviceOwner) "dpm | " else ""}finish",
   "action": "intent action string (for intent type)",
   "data": "URI string (for intent/download type)",
   "extras": {},
