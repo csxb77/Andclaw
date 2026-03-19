@@ -46,6 +46,16 @@ export default function Footer() {
           屏幕 UI 数据和截图会发送给 LLM 提供商，请注意隐私保护。
         </p>
 
+        {/* WeChat 群聊 */}
+        <div className="flex flex-col items-center gap-2 mb-6">
+          <img
+            src="/wechat-group-qr.jpg"
+            alt="扫码加入 Andclaw 微信群聊"
+            className="w-[160px] h-auto rounded-lg"
+          />
+          <span className="text-xs text-gray-500">群聊: Andclaw</span>
+        </div>
+
         <div className="text-center text-xs text-gray-700">
           Made with <span className="text-neon-purple">&#9829;</span> by Andclaw Team
         </div>
