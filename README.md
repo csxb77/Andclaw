@@ -17,11 +17,6 @@
   <a href="https://andclaw.app/#/install"><b>📲 在线安装 APK</b></a>
 </p>
 
-<p align="center">
-  <b>💬 微信群</b>（扫码加入 Andclaw 群聊）<br>
-  <img src="docs/8c41dc3ccb6192c59ff6d9e08d3c02c0.jpg" alt="Andclaw 微信群二维码" width="200">
-</p>
-
 ---
 
 ## 🌟 核心亮点
@@ -240,6 +235,11 @@ Moonshot AI 提供了两套独立的 API 服务，API Key **不通用**：
 本项目仅供学习和研究使用。开发者不对因使用本软件导致的任何数据丢失、设备损坏或其他损失承担责任。请谨慎使用 AI 自动化功能，避免在包含敏感信息的场景中使用。屏幕 UI 数据和截图会发送给 LLM 提供商，请注意隐私保护。
 
 ---
+
+<p align="center">
+  <b>💬 微信群</b>（扫码加入 Andclaw 群聊）<br>
+  <img src="docs/8c41dc3ccb6192c59ff6d9e08d3c02c0.jpg" alt="Andclaw 微信群二维码" width="200">
+</p>
 
 <p align="center">
   Made with ❤️ by Andclaw Team
