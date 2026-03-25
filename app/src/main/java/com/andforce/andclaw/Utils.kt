@@ -1,6 +1,7 @@
 package com.andforce.andclaw
 
 import android.content.Context
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.DisplayMetrics
@@ -17,6 +18,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
@@ -26,6 +28,60 @@ import java.util.concurrent.TimeUnit
 
 object Utils {
     private const val TAG = "AgentLLM"
+    private const val MAX_HTTP_RESPONSE_CHARS = 48_000
+
+    private val httpAgentClient = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(120, TimeUnit.SECONDS)
+        .writeTimeout(60, TimeUnit.SECONDS)
+        .build()
+
+    /**
+     * Agent 「http_request」动作：发起 HTTP/HTTPS 请求。
+     * 返回 [Pair.first]=true 表示已收到 HTTP 响应（含 4xx/5xx）；仅连接/IO 失败时为 false。
+     */
+    suspend fun executeHttpRequest(action: AiAction): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val urlString = action.data?.trim().orEmpty()
+        if (urlString.isEmpty()) {
+            return@withContext Pair(false, "HTTP: data(URL) 为空")
+        }
+        val uri = Uri.parse(urlString)
+        val scheme = uri.scheme?.lowercase()
+        if (scheme != "http" && scheme != "https") {
+            return@withContext Pair(false, "HTTP: 仅支持 http / https URL")
+        }
+        val method = (action.httpMethod ?: "GET").uppercase()
+        val effectiveBody: RequestBody? = when {
+            method == "GET" || method == "HEAD" -> null
+            !action.text.isNullOrEmpty() -> {
+                val ct = action.httpHeaders?.entries?.find { it.key.equals("Content-Type", true) }?.value
+                    ?: "application/json; charset=utf-8"
+                action.text.toRequestBody(ct.toMediaType())
+            }
+            method in setOf("POST", "PUT", "PATCH") -> ByteArray(0).toRequestBody(null)
+            else -> null
+        }
+        val request = Request.Builder()
+            .url(urlString)
+            .apply { action.httpHeaders?.forEach { (k, v) -> addHeader(k, v) } }
+            .method(method, effectiveBody)
+            .build()
+        try {
+            httpAgentClient.newCall(request).execute().use { resp ->
+                val raw = resp.body.string()
+                val shown = if (raw.length > MAX_HTTP_RESPONSE_CHARS) {
+                    raw.take(MAX_HTTP_RESPONSE_CHARS) + "\n...[truncated ${raw.length - MAX_HTTP_RESPONSE_CHARS} chars]"
+                } else raw
+                val msg = buildString {
+                    append("HTTP ${resp.code} ${resp.message}\n")
+                    append(shown)
+                }
+                Pair(true, msg)
+            }
+        } catch (e: IOException) {
+            Pair(false, "HTTP 异常: ${e.message}")
+        }
+    }
 
     fun maskKey(key: String): String {
         if (key.isEmpty()) return "(empty)"
@@ -113,12 +169,13 @@ You can see the current screen UI tree and execute actions step by step.
 6. "global_action" — System-level actions (back, home, notifications, etc.).
 7. "screenshot" — Take a screenshot and save to gallery.
 8. "download" — Download a file directly by URL (no browser needed).
-9. "wait" — Wait for page loading or UI transition, then re-check screen.
-10. "camera" — Take photo or record video using device camera.
-11. "screen_record" — Record the screen using MediaProjection (start/stop).
-12. "volume" — Control device volume (set, adjust, mute/unmute, query).
-13. "audio_record" — Record audio using the device microphone (start/stop).
-${if (isDeviceOwner) "14. \"dpm\" — Device Policy Manager operations (Device Owner).\n15. " else "14. "}"finish" — Task is fully complete.
+9. "http_request" — Call a REST/HTTP API (GET/POST/PUT/PATCH/DELETE/HEAD) with OkHttp. Use "data" for full URL (http:// or https://). Optional "http_method" (default GET), optional "text" for request body (JSON or plain text), optional "http_headers" object for headers (e.g. Authorization, Content-Type). Response body (truncated if very large) is shown in the next system message.
+10. "wait" — Wait for page loading or UI transition, then re-check screen.
+11. "camera" — Take photo or record video using device camera.
+12. "screen_record" — Record the screen using MediaProjection (start/stop).
+13. "volume" — Control device volume (set, adjust, mute/unmute, query).
+14. "audio_record" — Record audio using the device microphone (start/stop).
+${if (isDeviceOwner) "15. \"dpm\" — Device Policy Manager operations (Device Owner).\n16. " else "15. "}"finish" — Task is fully complete.
 
 === INTENT ===
 Open URL/app: action:"android.intent.action.VIEW", data:"https://..."
@@ -162,6 +219,14 @@ Capture the current screen and save to gallery. No extra parameters needed.
 === DOWNLOAD ===
 Download a file directly without opening a browser. Use "data" for the URL.
 Example: {"type":"download","data":"https://example.com/file.apk"}
+
+=== HTTP_REQUEST ===
+Call HTTP/HTTPS APIs without opening a browser. Use "data" for the full URL (supports http:// cleartext and https://).
+- "http_method": "GET" (default), "POST", "PUT", "PATCH", "DELETE", "HEAD"
+- "text": request body for POST/PUT/PATCH (often JSON); omit for GET
+- "http_headers": optional map, e.g. {"Authorization":"Bearer ...","Content-Type":"application/json"}
+Example GET: {"type":"http_request","data":"https://api.example.com/v1/status","http_method":"GET","progress":"查询状态","reason":"用户需要接口返回"}
+Example POST: {"type":"http_request","data":"https://api.example.com/v1/login","http_method":"POST","http_headers":{"Content-Type":"application/json"},"text":"{\"user\":\"a\"}","progress":"调用登录接口","reason":"用户需要登录"}
 
 === WAIT ===
 Wait for a page to finish loading or a UI transition to complete, then re-check the screen.
@@ -218,17 +283,18 @@ $dpmSection
 5. Use "global_action" for system navigation (back, home, etc.).
 6. BROWSER/WEBVIEW: When a screenshot is attached and shows a browser or web page, the UI tree text may be incomplete or inaccurate. ALWAYS trust the screenshot over the UI tree for determining page content and element positions. In browser pages, after clicking an input field, use "text_input" to type — the system handles browser input automatically.
 7. Use "download" to download files directly — do NOT open a browser just to download.
-8. Use "screenshot" when user asks to capture the screen.
-9. When the screen is loading or transitioning (spinners, "加载中", skeleton screens), use "wait" to pause and re-check. NEVER use "finish" just because the screen is loading.
-10. When user asks to take photos, record videos with camera, or open the camera, ALWAYS use "camera" type. Do NOT try to open the system Camera app.
-11. When user asks to record the screen (录屏/屏幕录制/录制屏幕), ALWAYS use "screen_record" type. This captures the screen display, NOT the camera.
-12. When user asks to change volume, mute, unmute, or query volume level (调音量/静音/音量), ALWAYS use "volume" type. Do NOT open Settings or use click actions.
-13. When user asks to record audio, voice, or sound (录音/录制音频/语音), ALWAYS use "audio_record" type. Do NOT try to open any third-party recorder app.
-${if (isDeviceOwner) "14. Use \"dpm\" for device policy / enterprise management.\n15. " else "14. "}Use "finish" ONLY when the goal is fully achieved.
-${if (isDeviceOwner) "16" else "15"}. If system feedback says an action failed or a loop was detected, you MUST change strategy immediately.
-${if (isDeviceOwner) "17" else "16"}. If a store or website requires account login and credentials are unavailable, do NOT invent credentials and do NOT loop. Choose another install path or return "finish" with the blocking reason.
-${if (isDeviceOwner) "18" else "17"}. After a file download starts, do NOT just say "wait". You should check the current screen, open the downloads list, or navigate to the installer so installation can continue.
-${if (isDeviceOwner) "19" else "18"}. Write "progress" and "reason" in the same language as the user's goal.
+8. Use "http_request" when the user needs to call an HTTP API, webhooks, or fetch JSON/text from a URL. Do NOT open a browser for simple API calls.
+9. Use "screenshot" when user asks to capture the screen.
+10. When the screen is loading or transitioning (spinners, "加载中", skeleton screens), use "wait" to pause and re-check. NEVER use "finish" just because the screen is loading.
+11. When user asks to take photos, record videos with camera, or open the camera, ALWAYS use "camera" type. Do NOT try to open the system Camera app.
+12. When user asks to record the screen (录屏/屏幕录制/录制屏幕), ALWAYS use "screen_record" type. This captures the screen display, NOT the camera.
+13. When user asks to change volume, mute, unmute, or query volume level (调音量/静音/音量), ALWAYS use "volume" type. Do NOT open Settings or use click actions.
+14. When user asks to record audio, voice, or sound (录音/录制音频/语音), ALWAYS use "audio_record" type. Do NOT try to open any third-party recorder app.
+${if (isDeviceOwner) "15. Use \"dpm\" for device policy / enterprise management.\n16. " else "15. "}Use "finish" ONLY when the goal is fully achieved.
+${if (isDeviceOwner) "17" else "16"}. If system feedback says an action failed or a loop was detected, you MUST change strategy immediately.
+${if (isDeviceOwner) "18" else "17"}. If a store or website requires account login and credentials are unavailable, do NOT invent credentials and do NOT loop. Choose another install path or return "finish" with the blocking reason.
+${if (isDeviceOwner) "19" else "18"}. After a file download starts, do NOT just say "wait". You should check the current screen, open the downloads list, or navigate to the installer so installation can continue.
+${if (isDeviceOwner) "20" else "19"}. Write "progress" and "reason" in the same language as the user's goal.
 
 === OUTPUT FORMAT ===
 You MUST output ONLY a raw JSON object. No text before or after. No markdown fences. Example:
@@ -238,21 +304,23 @@ Full schema:
 {
   "progress": "Steps completed so far",
   "reason": "Why this step is needed",
-  "type": "intent | click | swipe | long_press | text_input | global_action | screenshot | download | wait | camera | screen_record | volume | audio_record | wake_screen | ${if (isDeviceOwner) "dpm | " else ""}finish",
+  "type": "intent | click | swipe | long_press | text_input | global_action | screenshot | download | http_request | wait | camera | screen_record | volume | audio_record | wake_screen | ${if (isDeviceOwner) "dpm | " else ""}finish",
   "action": "intent action string (for intent type)",
-  "data": "URI string (for intent/download type)",
+  "data": "URI string (for intent/download/http_request type — full URL for http_request)",
   "extras": {},
   "x": 0, "y": 0,
   "end_x": 0, "end_y": 0,
   "duration": 0,
-  "text": "text to input (for text_input type)",
+  "text": "text to input (text_input) or raw body (http_request)",
   "global_action": "back|home|recents|notifications|quick_settings",
   "camera_action": "take_photo|start_video|stop_video (for camera type)",
   "screen_record_action": "start_record|stop_record (for screen_record type)",
   "volume_action": "set|adjust_up|adjust_down|mute|unmute|get (for volume type)",
   "audio_record_action": "start_record|stop_record (for audio_record type)",
+  "http_method": "GET|POST|PUT|PATCH|DELETE|HEAD (for http_request type, default GET)",
+  "http_headers": {"Header-Name": "value"}${if (isDeviceOwner) ",\n  \"dpm_action\": \"DPM operation name (for dpm type)\"" else ""},
   "package_name": "target package (for intent type)",
-  "class_name": "target activity class (for intent type)"${if (isDeviceOwner) ",\n  \"dpm_action\": \"DPM operation name (for dpm type)\"" else ""}
+  "class_name": "target activity class (for intent type)"
 }
 
 CRITICAL: Your entire response must be parseable as JSON. Any non-JSON text will cause a system error.

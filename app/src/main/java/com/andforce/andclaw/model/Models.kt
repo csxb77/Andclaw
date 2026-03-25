@@ -92,7 +92,15 @@ data class AiAction(
     val volumeAction: String? = null,
 
     @SerializedName("audio_record_action")
-    val audioRecordAction: String? = null
+    val audioRecordAction: String? = null,
+
+    /** GET / POST / PUT / PATCH / DELETE / HEAD（默认 GET） */
+    @SerializedName("http_method")
+    val httpMethod: String? = null,
+
+    /** 请求头，如 Authorization、Content-Type */
+    @SerializedName("http_headers")
+    val httpHeaders: Map<String, String>? = null
 ) {
     companion object {
         const val TYPE_INTENT = "intent"
@@ -104,6 +112,7 @@ data class AiAction(
         const val TYPE_GLOBAL_ACTION = "global_action"
         const val TYPE_SCREENSHOT = "screenshot"
         const val TYPE_DOWNLOAD = "download"
+        const val TYPE_HTTP_REQUEST = "http_request"
         const val TYPE_WAIT = "wait"
         const val TYPE_CAMERA = "camera"
         const val TYPE_SCREEN_RECORD = "screen_record"

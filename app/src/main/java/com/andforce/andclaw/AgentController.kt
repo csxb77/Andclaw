@@ -399,7 +399,10 @@ object AgentController : ITgBridgeService, IAiConfigService {
     private fun handleAction(action: AiAction) {
         if (!isAgentRunning) return
 
-        val fingerprint = "${action.type}_${action.x}_${action.y}"
+        val fingerprint = when (action.type) {
+            AiAction.TYPE_HTTP_REQUEST -> "${action.type}_${action.data}_${action.httpMethod}"
+            else -> "${action.type}_${action.x}_${action.y}"
+        }
         if (fingerprint == lastFingerprint) {
             consecutiveSameCount++
         } else {
@@ -454,6 +457,7 @@ object AgentController : ITgBridgeService, IAiConfigService {
             AiAction.TYPE_GLOBAL_ACTION,
             AiAction.TYPE_SCREENSHOT,
             AiAction.TYPE_DOWNLOAD,
+            AiAction.TYPE_HTTP_REQUEST,
             AiAction.TYPE_CAMERA,
             AiAction.TYPE_SCREEN_RECORD,
             AiAction.TYPE_VOLUME,
@@ -649,6 +653,12 @@ object AgentController : ITgBridgeService, IAiConfigService {
                                 outputMsg = "Download failed: ${e.message}"
                             }
                         }
+                    }
+
+                    AiAction.TYPE_HTTP_REQUEST -> {
+                        val (ok, msg) = Utils.executeHttpRequest(action)
+                        success = ok
+                        outputMsg = msg
                     }
 
                     AiAction.TYPE_DPM -> {
