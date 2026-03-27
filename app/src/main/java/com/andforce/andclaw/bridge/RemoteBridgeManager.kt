@@ -59,6 +59,9 @@ class RemoteBridgeManager(
     private val _feishuStatus = MutableStateFlow(BridgeStatus.NOT_CONFIGURED)
     override val feishuStatus: StateFlow<BridgeStatus> = _feishuStatus.asStateFlow()
 
+    private val _activeRemoteChannel = MutableStateFlow(RemoteChannel.TELEGRAM)
+    override val activeRemoteChannel: StateFlow<RemoteChannel> = _activeRemoteChannel.asStateFlow()
+
     private var telegramBridge: TelegramBridge? = null
 
     /** 当前已启动轮询的 token（trim 后）；用于幂等，避免重复创建 [TelegramBridge]。 */
@@ -81,6 +84,43 @@ class RemoteBridgeManager(
 
     init {
         migrateLegacyTgFromRemoteChannelPrefs()
+        _activeRemoteChannel.value = computeInitialActiveChannel()
+    }
+
+    override fun getActiveRemoteChannel(): RemoteChannel = _activeRemoteChannel.value
+
+    override fun setActiveRemoteChannel(channel: RemoteChannel) {
+        if (_activeRemoteChannel.value == channel) return
+        channelPrefs.edit().putString(KEY_ACTIVE_REMOTE_CHANNEL, channel.name).apply()
+        _activeRemoteChannel.value = channel
+        applyBridgesForActiveChannel()
+    }
+
+    private fun computeInitialActiveChannel(): RemoteChannel {
+        val name = channelPrefs.getString(KEY_ACTIVE_REMOTE_CHANNEL, null)
+        if (name != null) {
+            return runCatching { RemoteChannel.valueOf(name) }.getOrDefault(RemoteChannel.TELEGRAM)
+        }
+        val inferred = when {
+            tgToken.trim().isNotBlank() -> RemoteChannel.TELEGRAM
+            getFeishuAppId().trim().isNotBlank() && getFeishuAppSecret().trim().isNotBlank() ->
+                RemoteChannel.FEISHU
+            loadClawBotAuthState()?.isCompleteForBridge() == true -> RemoteChannel.CLAWBOT
+            else -> RemoteChannel.TELEGRAM
+        }
+        channelPrefs.edit().putString(KEY_ACTIVE_REMOTE_CHANNEL, inferred.name).apply()
+        return inferred
+    }
+
+    private fun applyBridgesForActiveChannel() {
+        stopTelegramBridge()
+        stopClawBotBridgeInternal()
+        stopFeishuBridgeInternal()
+        when (_activeRemoteChannel.value) {
+            RemoteChannel.TELEGRAM -> startTelegramBridgeIfConfigured()
+            RemoteChannel.CLAWBOT -> startClawBotBridgeIfConfigured(forceRelogin = false)
+            RemoteChannel.FEISHU -> startFeishuBridgeIfConfigured()
+        }
     }
 
     override fun setTelegramInboundHandler(handler: suspend (TgInboundMessage) -> Unit) {
@@ -96,9 +136,7 @@ class RemoteBridgeManager(
     }
 
     override fun startEligibleBridges() {
-        startTelegramBridgeIfConfigured()
-        startClawBotBridgeIfConfigured(forceRelogin = false)
-        startFeishuBridgeIfConfigured()
+        applyBridgesForActiveChannel()
     }
 
     override fun stopAllBridges() {
@@ -377,7 +415,7 @@ class RemoteBridgeManager(
     override fun setTgToken(token: String) {
         val oldToken = tgToken
         agentPrefs.edit().putString(KEY_TG_TOKEN, token).apply()
-        if (token != oldToken) {
+        if (token != oldToken && getActiveRemoteChannel() == RemoteChannel.TELEGRAM) {
             stopTelegramBridge()
             if (token.isBlank()) {
                 _telegramStatus.value = BridgeStatus.NOT_CONFIGURED
@@ -456,7 +494,7 @@ class RemoteBridgeManager(
     override fun setFeishuAppId(appId: String) {
         val oldAppId = getFeishuAppId()
         channelPrefs.edit().putString(KEY_FEISHU_APP_ID, appId).apply()
-        if (appId.trim() != oldAppId.trim()) {
+        if (appId.trim() != oldAppId.trim() && getActiveRemoteChannel() == RemoteChannel.FEISHU) {
             stopFeishuBridgeInternal()
             if (appId.isNotBlank() && getFeishuAppSecret().isNotBlank()) {
                 startFeishuBridgeIfConfigured()
@@ -472,7 +510,9 @@ class RemoteBridgeManager(
     override fun setFeishuAppSecret(secret: String) {
         val oldSecret = getFeishuAppSecret()
         channelPrefs.edit().putString(KEY_FEISHU_APP_SECRET, secret).apply()
-        if (secret.trim() != oldSecret.trim() && getFeishuAppId().isNotBlank()) {
+        if (secret.trim() != oldSecret.trim() && getFeishuAppId().isNotBlank() &&
+            getActiveRemoteChannel() == RemoteChannel.FEISHU
+        ) {
             stopFeishuBridgeInternal()
             if (secret.isNotBlank()) {
                 startFeishuBridgeIfConfigured()
@@ -526,6 +566,7 @@ class RemoteBridgeManager(
 
         const val KEY_FEISHU_APP_ID = "feishu_app_id"
         const val KEY_FEISHU_APP_SECRET = "feishu_app_secret"
+        const val KEY_ACTIVE_REMOTE_CHANNEL = "active_remote_channel"
 
         const val JSON_BOT_TOKEN = "botToken"
         const val JSON_BASE_URL = "baseUrl"

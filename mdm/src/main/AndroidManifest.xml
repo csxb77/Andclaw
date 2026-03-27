@@ -112,6 +112,12 @@
             android:theme="@style/Base.Theme.MyApplication"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name=".policy.locktask.RemoteChannelSettingsActivity"
+            android:exported="false"
+            android:theme="@style/Base.Theme.MyApplication"
+            android:screenOrientation="portrait" />
+
         <!-- SetupKioskMode -->
         <activity
             android:name=".policy.locktask.SetupKioskModeActivity"

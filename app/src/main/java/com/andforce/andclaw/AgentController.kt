@@ -212,7 +212,7 @@ object AgentController : ITgBridgeService, IAiConfigService {
     // --- ITgBridgeService ---
 
     override fun startBridge() {
-        remoteBridge.startTelegramBridgeIfConfigured()
+        remoteBridge.startEligibleBridges()
     }
 
     override fun stopBridge() {

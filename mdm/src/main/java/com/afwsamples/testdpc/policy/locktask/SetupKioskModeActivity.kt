@@ -24,12 +24,14 @@ import com.andforce.mdm.center.DeviceStatusViewModel
 import com.andforce.mdm.center.AppUtils
 import com.afwsamples.testdpc.DevicePolicyManagerGateway
 import com.afwsamples.testdpc.DevicePolicyManagerGatewayImpl
+import com.afwsamples.testdpc.R
 import com.afwsamples.testdpc.databinding.ActivitySetupKioskLayoutBinding
 import com.afwsamples.testdpc.policy.locktask.viewmodule.KioskViewModule
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.flow.combine
 import com.base.services.BridgeStatus
 import com.base.services.ClawBotLoginStatus
+import com.base.services.RemoteChannel
 import com.base.services.IRemoteBridgeService
 import com.base.services.IRemoteChannelConfigService
 import kotlinx.coroutines.launch
@@ -105,14 +107,11 @@ open class SetupKioskModeActivity : AppCompatActivity() {
                 openAiSettings()
             }
 
-            binding.setupTg.setOnClickListener {
-                openAiSettings()
+            binding.setupRemoteChannel.setOnClickListener {
+                openRemoteChannelSettings()
             }
 
-            binding.setupClawBot.setOnClickListener {
-                openAiSettings()
-            }
-
+            setupRemoteChannelChips()
         }
 
         connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -156,9 +155,7 @@ open class SetupKioskModeActivity : AppCompatActivity() {
                     mDevicePolicyManagerGateway?.setPasswordQuality(0, {}, {})
                     mDevicePolicyManagerGateway?.setKeyguardDisabled(true, {}, {})
 
-                    if (channelConfig.tgToken.isNotBlank()) {
-                        remoteBridgeService.startTelegramBridgeIfConfigured()
-                    }
+                    remoteBridgeService.startEligibleBridges()
                 } else {
                     remoteBridgeService.stopTelegramBridge()
                 }
@@ -172,42 +169,76 @@ open class SetupKioskModeActivity : AppCompatActivity() {
             }
         }
 
-        // 监听 Telegram 连接状态
-        lifecycleScope.launch {
-            remoteBridgeService.telegramStatus.collect { status ->
-                binding?.apply {
-                    tgStatus.text = bridgeStatusLabel(status)
-                    setupTg.visibility = when (status) {
-                        BridgeStatus.NOT_CONFIGURED, BridgeStatus.DISCONNECTED -> View.VISIBLE
-                        else -> View.GONE
-                    }
-                }
-            }
-        }
-
-        lifecycleScope.launch {
-            remoteBridgeService.feishuStatus.collect { status ->
-                binding?.apply {
-                    feishuStatus.text = bridgeStatusLabel(status)
-                }
-            }
-        }
-
         lifecycleScope.launch {
             combine(
+                channelConfig.activeRemoteChannel,
+                remoteBridgeService.telegramStatus,
+                remoteBridgeService.feishuStatus,
                 remoteBridgeService.clawBotStatus,
                 remoteBridgeService.clawBotLoginStatus
-            ) { b, l -> b to l }.collect { (bridge, login) ->
+            ) { active, tg, fs, cb, cbLogin ->
+                active to kioskStatusLine(active, tg, fs, cb, cbLogin)
+            }.collect { (active, line) ->
                 binding?.apply {
-                    clawBotStatus.text = formatClawBotKioskLine(bridge, login)
-                    setupClawBot.visibility = when (bridge) {
-                        BridgeStatus.NOT_CONFIGURED, BridgeStatus.DISCONNECTED -> View.VISIBLE
+                    remoteChannelStatus.text = line
+                    setupRemoteChannel.visibility = when {
+                        needsRemoteSetup(active) -> View.VISIBLE
                         else -> View.GONE
                     }
                 }
             }
         }
 
+    }
+
+    private val kioskChipListener =
+        com.google.android.material.chip.ChipGroup.OnCheckedChangeListener { _, checkedId ->
+            if (checkedId == View.NO_ID) return@OnCheckedChangeListener
+            val ch = kioskChipIdToChannel(checkedId) ?: return@OnCheckedChangeListener
+            if (channelConfig.getActiveRemoteChannel() == ch) return@OnCheckedChangeListener
+            channelConfig.setActiveRemoteChannel(ch)
+        }
+
+    private fun kioskChipIdToChannel(id: Int): RemoteChannel? = when (id) {
+        R.id.chip_telegram -> RemoteChannel.TELEGRAM
+        R.id.chip_feishu -> RemoteChannel.FEISHU
+        R.id.chip_clawbot -> RemoteChannel.CLAWBOT
+        else -> null
+    }
+
+    private fun setupRemoteChannelChips() {
+        binding?.chipGroupRemoteChannel?.let { group ->
+            group.setOnCheckedChangeListener(null)
+            when (channelConfig.getActiveRemoteChannel()) {
+                RemoteChannel.TELEGRAM -> group.check(R.id.chip_telegram)
+                RemoteChannel.FEISHU -> group.check(R.id.chip_feishu)
+                RemoteChannel.CLAWBOT -> group.check(R.id.chip_clawbot)
+            }
+            group.setOnCheckedChangeListener(kioskChipListener)
+        }
+    }
+
+    private fun needsRemoteSetup(active: RemoteChannel): Boolean {
+        val tg = remoteBridgeService.telegramStatus.value
+        val fs = remoteBridgeService.feishuStatus.value
+        val cb = remoteBridgeService.clawBotStatus.value
+        return when (active) {
+            RemoteChannel.TELEGRAM -> tg == BridgeStatus.NOT_CONFIGURED || tg == BridgeStatus.DISCONNECTED
+            RemoteChannel.FEISHU -> fs == BridgeStatus.NOT_CONFIGURED || fs == BridgeStatus.DISCONNECTED
+            RemoteChannel.CLAWBOT -> cb == BridgeStatus.NOT_CONFIGURED || cb == BridgeStatus.DISCONNECTED
+        }
+    }
+
+    private fun kioskStatusLine(
+        active: RemoteChannel,
+        tg: BridgeStatus,
+        fs: BridgeStatus,
+        cb: BridgeStatus,
+        cbLogin: ClawBotLoginStatus
+    ): String = when (active) {
+        RemoteChannel.TELEGRAM -> bridgeStatusLabel(tg)
+        RemoteChannel.FEISHU -> bridgeStatusLabel(fs)
+        RemoteChannel.CLAWBOT -> formatClawBotKioskLine(cb, cbLogin)
     }
 
     private fun bridgeStatusLabel(status: BridgeStatus): String = when (status) {
@@ -233,6 +264,7 @@ open class SetupKioskModeActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        setupRemoteChannelChips()
         checkRequiredPermissions()
     }
 
@@ -362,6 +394,16 @@ open class SetupKioskModeActivity : AppCompatActivity() {
 
     private fun openAiSettings() {
         startActivity(Intent(this, AiSettingsActivity::class.java))
+    }
+
+    private fun openRemoteChannelSettings() {
+        val i = Intent(this, RemoteChannelSettingsActivity::class.java).apply {
+            putExtra(
+                RemoteChannelSettingsActivity.EXTRA_INITIAL_CHANNEL,
+                channelConfig.getActiveRemoteChannel().name
+            )
+        }
+        startActivity(i)
     }
 
     private fun openChatActivity() {

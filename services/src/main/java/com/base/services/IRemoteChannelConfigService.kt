@@ -1,6 +1,13 @@
 package com.base.services
 
+import kotlinx.coroutines.flow.StateFlow
+
 interface IRemoteChannelConfigService {
+    val activeRemoteChannel: StateFlow<RemoteChannel>
+
+    fun getActiveRemoteChannel(): RemoteChannel
+
+    fun setActiveRemoteChannel(channel: RemoteChannel)
     val tgToken: String
     fun setTgToken(token: String)
     fun getTgChatId(): Long

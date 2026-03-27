@@ -141,7 +141,7 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/tg_card"
+                    android:id="@+id/remote_channel_card"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="@dimen/activity_vertical_margin"
@@ -160,114 +160,66 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Telegram 连接"
+                            android:text="远程连接"
                             android:textAppearance="@style/TextAppearance.Mdm.Title"
                             android:textColor="@color/mdm_primary" />
 
                         <TextView
-                            android:id="@+id/tg_status"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_sm"
-                            android:text="未配置"
+                            android:text="仅能同时启用一种连接方式，切换后其他通道会断开。"
                             android:textAppearance="@style/TextAppearance.Mdm.Body"
                             android:textColor="@color/mdm_text_secondary" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/setup_tg"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="wrap_content"
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/chip_group_remote_channel"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_md"
-                            android:text="去配置"
-                            android:visibility="gone"
-                            app:strokeColor="@color/mdm_primary" />
+                            app:selectionRequired="true"
+                            app:singleSelection="true">
 
-                    </LinearLayout>
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chip_telegram"
+                                style="@style/Widget.Material3.Chip.Filter"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Telegram" />
 
-                </com.google.android.material.card.MaterialCardView>
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chip_feishu"
+                                style="@style/Widget.Material3.Chip.Filter"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="飞书" />
 
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/feishu_card"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/activity_vertical_margin"
-                    app:cardBackgroundColor="@color/mdm_card_background"
-                    app:cardCornerRadius="@dimen/card_corner_radius"
-                    app:cardElevation="@dimen/card_elevation"
-                    app:strokeColor="@color/mdm_card_border"
-                    app:strokeWidth="1dp">
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chip_clawbot"
+                                style="@style/Widget.Material3.Chip.Filter"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="ClawBot" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="@dimen/card_padding">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="飞书连接"
-                            android:textAppearance="@style/TextAppearance.Mdm.Title"
-                            android:textColor="@color/mdm_tertiary" />
+                        </com.google.android.material.chip.ChipGroup>
 
                         <TextView
-                            android:id="@+id/feishu_status"
-                            android:layout_width="wrap_content"
+                            android:id="@+id/remote_channel_status"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/spacing_sm"
-                            android:text="未配置"
+                            android:layout_marginTop="@dimen/spacing_md"
                             android:textAppearance="@style/TextAppearance.Mdm.Body"
                             android:textColor="@color/mdm_text_secondary"
                             tools:text="未配置" />
 
-                    </LinearLayout>
-
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/claw_bot_card"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/activity_vertical_margin"
-                    app:cardBackgroundColor="@color/mdm_card_background"
-                    app:cardCornerRadius="@dimen/card_corner_radius"
-                    app:cardElevation="@dimen/card_elevation"
-                    app:strokeColor="@color/mdm_card_border"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="@dimen/card_padding">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="ClawBot（微信）"
-                            android:textAppearance="@style/TextAppearance.Mdm.Title"
-                            android:textColor="@color/mdm_secondary" />
-
-                        <TextView
-                            android:id="@+id/claw_bot_status"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/spacing_sm"
-                            android:text="桥接: 未配置 · 登录: 未配置"
-                            android:textAppearance="@style/TextAppearance.Mdm.Body"
-                            android:textColor="@color/mdm_text_secondary"
-                            tools:text="桥接: 未配置 · 登录: 未配置" />
-
                         <com.google.android.material.button.MaterialButton
-                            android:id="@+id/setup_claw_bot"
+                            android:id="@+id/setup_remote_channel"
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_md"
                             android:text="去配置"
-                            android:visibility="gone"
-                            app:strokeColor="@color/mdm_secondary" />
+                            app:strokeColor="@color/mdm_primary" />
 
                     </LinearLayout>
 
@@ -300,7 +252,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_sm"
-                            android:text="仅展示历史记录，不支持输入。请用另一部手机通过 Telegram 发送指令，在此查看 AI 的回复与操作。"
+                            android:text="仅展示历史记录，不支持输入。请用已配置的远程连接（Telegram / 飞书 / ClawBot）发送指令，在此查看 AI 的回复与操作。"
                             android:textAppearance="@style/TextAppearance.Mdm.Body"
                             android:textColor="@color/mdm_text_secondary" />
 

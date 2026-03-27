@@ -172,7 +172,7 @@
 
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Telegram 配置卡片 -->
+                <!-- 远程连接入口（详细配置见独立页面） -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -187,253 +187,32 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="16dp">
+                        android:padding="@dimen/card_padding">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Telegram 配置"
+                            android:text="远程连接"
                             android:textAppearance="@style/TextAppearance.Mdm.Title"
                             android:textColor="@color/mdm_primary" />
 
-                        <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        <TextView
+                            android:id="@+id/tv_remote_channel_summary"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:hint="Telegram Bot Token"
-                            app:boxStrokeColor="@color/mdm_primary"
-                            app:endIconMode="password_toggle"
-                            app:hintTextColor="@color/mdm_text_secondary">
-
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etTgToken"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="textPassword"
-                                android:textColor="@color/mdm_text_primary" />
-
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:hint="Telegram Allowed Chat ID (0 = 不限制)"
-                            app:boxStrokeColor="@color/mdm_primary"
-                            app:hintTextColor="@color/mdm_text_secondary">
-
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etTgChatId"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="numberSigned"
-                                android:textColor="@color/mdm_text_primary" />
-
-                        </com.google.android.material.textfield.TextInputLayout>
+                            android:layout_marginTop="@dimen/spacing_sm"
+                            android:textAppearance="@style/TextAppearance.Mdm.Body"
+                            android:textColor="@color/mdm_text_secondary"
+                            tools:text="当前：Telegram" />
 
                         <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnTestTg"
+                            android:id="@+id/btn_open_remote_channel_settings"
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:text="测试 Telegram Bot"
+                            android:layout_marginTop="@dimen/spacing_md"
+                            android:text="配置远程连接"
                             app:strokeColor="@color/mdm_primary" />
-
-                        <TextView
-                            android:id="@+id/tvTgTestResult"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:textAppearance="@style/TextAppearance.Mdm.Caption"
-                            android:visibility="gone" />
-
-                    </LinearLayout>
-
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- ClawBot 配置卡片 -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/activity_vertical_margin"
-                    app:cardBackgroundColor="@color/mdm_card_background"
-                    app:cardCornerRadius="@dimen/card_corner_radius"
-                    app:cardElevation="@dimen/card_elevation"
-                    app:strokeColor="@color/mdm_card_border"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="ClawBot（微信）"
-                            android:textAppearance="@style/TextAppearance.Mdm.Title"
-                            android:textColor="@color/mdm_secondary" />
-
-                        <TextView
-                            android:id="@+id/tvClawBotStatus"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:textAppearance="@style/TextAppearance.Mdm.Body"
-                            android:textColor="@color/mdm_text_secondary"
-                            tools:text="桥接: 未配置 · 登录: 未配置" />
-
-                        <ImageView
-                            android:id="@+id/ivClawBotQr"
-                            android:layout_width="240dp"
-                            android:layout_height="240dp"
-                            android:layout_gravity="center_horizontal"
-                            android:layout_marginTop="16dp"
-                            android:contentDescription="ClawBot 登录二维码"
-                            android:scaleType="fitCenter"
-                            android:visibility="gone" />
-
-                        <TextView
-                            android:id="@+id/tvClawBotQrHint"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:gravity="center"
-                            android:textAppearance="@style/TextAppearance.Mdm.Caption"
-                            android:textColor="@color/mdm_text_secondary"
-                            android:visibility="gone"
-                            tools:text="请使用微信「ClawBot 插件」扫描上方二维码" />
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:orientation="horizontal">
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnClawBotLogin"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginEnd="4dp"
-                                android:layout_weight="1"
-                                android:text="扫码登录"
-                                app:strokeColor="@color/mdm_secondary" />
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnClawBotClearAuth"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="4dp"
-                                android:layout_weight="1"
-                                android:text="清除登录"
-                                app:strokeColor="@color/mdm_error" />
-
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/tvClawBotResult"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:textAppearance="@style/TextAppearance.Mdm.Caption"
-                            android:visibility="gone" />
-
-                    </LinearLayout>
-
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- 飞书配置卡片 -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/activity_vertical_margin"
-                    app:cardBackgroundColor="@color/mdm_card_background"
-                    app:cardCornerRadius="@dimen/card_corner_radius"
-                    app:cardElevation="@dimen/card_elevation"
-                    app:strokeColor="@color/mdm_card_border"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="飞书配置"
-                            android:textAppearance="@style/TextAppearance.Mdm.Title"
-                            android:textColor="@color/mdm_tertiary" />
-
-                        <TextView
-                            android:id="@+id/tvFeishuStatus"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:textAppearance="@style/TextAppearance.Mdm.Body"
-                            android:textColor="@color/mdm_text_secondary"
-                            tools:text="状态: 未配置" />
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:hint="飞书 App ID"
-                            app:boxStrokeColor="@color/mdm_tertiary"
-                            app:hintTextColor="@color/mdm_text_secondary">
-
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etFeishuAppId"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="text"
-                                android:textColor="@color/mdm_text_primary" />
-
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:hint="飞书 App Secret"
-                            app:boxStrokeColor="@color/mdm_tertiary"
-                            app:endIconMode="password_toggle"
-                            app:hintTextColor="@color/mdm_text_secondary">
-
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etFeishuAppSecret"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="textPassword"
-                                android:textColor="@color/mdm_text_primary" />
-
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnTestFeishu"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:text="测试飞书连接"
-                            app:strokeColor="@color/mdm_tertiary" />
-
-                        <TextView
-                            android:id="@+id/tvFeishuTestResult"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:textAppearance="@style/TextAppearance.Mdm.Caption"
-                            android:visibility="gone" />
 
                     </LinearLayout>
 
